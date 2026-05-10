@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KutKing – Barber Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    :root {
+      --ink:   #0e0b07;
+      --cream: #f5efe3;
+      --gold:  #c8973a;
+      --ember: #e05c2a;
+      --green: #2d8a4e;
+      --red:   #c0392b;
+      --card:  rgba(255,255,255,.04);
+      --border:rgba(200,151,58,.18);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--ink); color: var(--cream);
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    }
+
+    /* ── PIN SCREEN ── */
+    #pinScreen {
+      position: fixed; inset: 0; z-index: 50;
+      background: var(--ink);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pin-box {
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 48px 40px;
+      width: 100%; max-width: 380px;
+      text-align: center;
+      animation: fadeUp .4s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(20px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .pin-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px; letter-spacing: 3px;
+      margin-bottom: 4px;
+    }
+    .pin-logo span { color: var(--gold); }
+    .pin-sub {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 2px;
+      color: rgba(245,239,227,.35);
+      text-transform: uppercase;
+      margin-bottom: 36px;
+    }
+    .pin-dots {
+      display: flex; justify-content: center; gap: 12px;
+      margin-bottom: 28px;
+    }
+    .pin-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(200,151,58,.4);
+      background: transparent;
+      transition: background .15s, border-color .15s;
+    }
+    .pin-dot.filled { background: var(--gold); border-color: var(--gold); }
+    .pin-dot.error  { background: var(--red);  border-color: var(--red); }
+    .pin-pad {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-bottom: 16px;
+    }
+    .pin-key {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(200,151,58,.15);
+      border-radius: 8px;
+      padding: 16px 0;
+      font-family: 'Space Mono', monospace;
+      font-size: 20px; font-weight: 700;
+      color: var(--cream);
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+    }
+    .pin-key:hover { background: rgba(200,151,58,.15); transform: translateY(-1px); }
+    .pin-key:active { transform: scale(.95); }
+    .pin-key.del { font-size: 16px; color: rgba(245,239,227,.5); }
+    .pin-err {
+      font-size: 12px; color: var(--red);
+      min-height: 18px; margin-top: 4px;
+      font-family: 'Space Mono', monospace;
+    }
+
+    /* ── DASHBOARD ── */
+    #dashboard { display: none; position: relative; z-index: 1; }
+    header {
+      background: rgba(14,11,7,.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .nav {
+      max-width: 1100px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px;
+    }
+    .logo-icon {
+      width: 34px; height: 34px; background: var(--gold); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 17px;
+    }
+    .logo span { color: var(--gold); }
+    .nav-right { display: flex; align-items: center; gap: 14px; }
+    .badge-barber {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      letter-spacing: 2px; text-transform: uppercase;
+      background: rgba(200,151,58,.15); color: var(--gold);
+      border: 1px solid rgba(200,151,58,.3);
+      padding: 5px 12px; border-radius: 20px;
+    }
+    .btn-lock {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      letter-spacing: 1px; text-transform: uppercase;
+      background: none; border: 1px solid rgba(245,239,227,.15);
+      color: rgba(245,239,227,.4);
+      padding: 6px 14px; border-radius: 4px; cursor: pointer;
+      transition: color .2s, border-color .2s;
+    }
+    .btn-lock:hover { color: var(--cream); border-color: rgba(245,239,227,.4); }
+
+    .main { max-width: 1100px; margin: 0 auto; padding: 36px 24px; }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px; margin-bottom: 36px;
+    }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 20px 22px;
+    }
+    .stat-label {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: rgba(245,239,227,.4); margin-bottom: 8px;
+    }
+    .stat-val {
+      font-family: 'Bebas Neue', sans-serif; font-size: 40px;
+      line-height: 1; color: var(--gold);
+    }
+
+    /* ── SECTION TABS ── */
+    .tabs { display: flex; gap: 6px; margin-bottom: 24px; }
+    .tab {
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      letter-spacing: 2px; text-transform: uppercase;
+      padding: 8px 18px; border-radius: 3px; cursor: pointer;
+      border: 1px solid rgba(200,151,58,.2);
+      background: transparent; color: rgba(245,239,227,.5);
+      transition: all .2s;
+    }
+    .tab.active { background: var(--gold); color: var(--ink); border-color: var(--gold); font-weight: 700; }
+
+    /* ── VERIFY PANEL ── */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .verify-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 28px;
+    }
+    .card h3 {
+      font-family: 'Bebas Neue', sans-serif; font-size: 22px;
+      letter-spacing: 1px; color: var(--gold); margin-bottom: 18px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .form-group label {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: rgba(245,239,227,.45);
+    }
+    .form-group input, .form-group select {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(200,151,58,.2);
+      border-radius: 3px; padding: 10px 14px;
+      color: var(--cream); font-family: 'Sora', sans-serif; font-size: 14px;
+      outline: none; transition: border-color .2s; width: 100%;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--gold); }
+    .form-group input { text-transform: uppercase; letter-spacing: 2px; }
+    .form-group select option { background: #1a1208; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-family: 'Space Mono', monospace; font-size: 11px;
+      letter-spacing: 2px; text-transform: uppercase;
+      padding: 12px 22px; border-radius: 3px; cursor: pointer;
+      border: none; transition: transform .15s, box-shadow .15s;
+      width: 100%; margin-top: 4px;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .btn-gold { background: var(--gold); color: var(--ink); font-weight: 700; box-shadow: 0 3px 16px rgba(200,151,58,.3); }
+    .btn-green { background: var(--green); color: #fff; box-shadow: 0 3px 16px rgba(45,138,78,.3); }
+    .btn-red   { background: var(--red);   color: #fff; box-shadow: 0 3px 16px rgba(192,57,43,.25); }
+
+    .result-box {
+      display: none;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(200,151,58,.2);
+      border-radius: 6px; padding: 18px 20px; margin-top: 16px;
+    }
+    .result-box.show { display: block; }
+    .result-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .result-row:last-child { margin-bottom: 0; }
+    .result-key {
+      font-family: 'Space Mono', monospace; font-size: 10px;
+      letter-spacing: 1px; color: rgba(245,239,227,.4);
+      text-transform: uppercase;
+    }
+    .result-val { font-size: 14px; font-weight: 600; }
+    .pts-bar-wrap { background: rgba(255,255,255,.06); border-radius: 99px; height: 8px; overflow: hidden; margin: 10px 0 4px; }
+    .pts-bar { height: 100%; background: linear-gradient(90deg, var(--gold), var(--ember)); border-radius: 99px; transition: width .8s cubic-bezier(.22,1,.36,1); }
+    .pts-labels { display: flex; justify-content: space-between; font-family: 'Space Mono', monospace; font-size: 9px; color: rgba(245,239,227,.3); }
+    .free-badge {
+      display: none; background: linear-gradient(135deg, var(--gold), var(--ember));
+      color: var(--ink); border-radius: 4px; padding: 8px 12px;
+      text-align: center; font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px; letter-spacing: 1px; margin-bottom: 12px;
+    }
+    .action-btns { display: flex; gap: 10px; margin-top: 14px; }
+    .action-btns .btn { margin-top: 0; }
+
+    /* ── BOOKINGS TABLE ── */
+    .table-controls {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 18px; flex-wrap: wrap;
+    }
+    .table-controls input, .table-controls select {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(200,151,58,.2);
+      border-radius: 3px; padding: 8px 12px;
+      color: var(--cream); font-family: 'Sora', sans-serif; font-size: 13px;
+      outline: none;
+    }
+    .table-controls input:focus, .table-controls select:focus { border-color: var(--gold); }
+    .table-controls select option { background: #1a1208; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { border-bottom: 1px solid rgba(200,151,58,.2); }
+    th {
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: rgba(245,239,227,.35); padding: 10px 14px; text-align: left;
+    }
+    td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,.02); }
+    .id-chip {
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      font-weight: 700; color: var(--gold); letter-spacing: 1px;
+    }
+    .status-chip {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      letter-spacing: 1px; text-transform: uppercase; font-weight: 700;
+    }
+    .status-chip.pending  { background: rgba(200,151,58,.15); color: var(--gold); border: 1px solid rgba(200,151,58,.3); }
+    .status-chip.verified { background: rgba(45,138,78,.2);   color: #4caf7d;    border: 1px solid rgba(45,138,78,.35); }
+    .tbl-verify-btn {
+      font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1px;
+      text-transform: uppercase; padding: 5px 12px; border-radius: 3px;
+      border: none; cursor: pointer; background: var(--green); color: #fff;
+      transition: opacity .15s;
+    }
+    .tbl-verify-btn:hover { opacity: .85; }
+    .tbl-verify-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .empty-state {
+      text-align: center; padding: 48px 24px;
+      color: rgba(245,239,227,.3);
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      letter-spacing: 1px;
+    }
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      background: #1e1a12; border: 1px solid rgba(200,151,58,.3);
+      border-radius: 6px; padding: 12px 24px;
+      font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: 1px;
+      color: var(--cream); z-index: 999;
+      opacity: 0; transition: opacity .3s;
+      pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
+    .toast.success { border-color: rgba(45,138,78,.5); color: #4caf7d; }
+    .toast.error   { border-color: rgba(192,57,43,.5); color: #e57373; }
+
+    @media (max-width: 700px) {
+      .verify-grid { grid-template-columns: 1fr; }
+      .stats-row   { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── PIN SCREEN ────────────────────────────────────────── -->
+<div id="pinScreen">
+  <div class="pin-box">
+    <div class="pin-logo">KUT<span>KING</span></div>
+    <div class="pin-sub">Barber Dashboard · Enter PIN</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key" onclick="pinPress('0')" style="grid-column:2">0</button>
+      <button class="pin-key del" onclick="pinDel()">⌫</button>
+    </div>
+    <div class="pin-err" id="pinErr"></div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ─────────────────────────────────────────── -->
+<div id="dashboard">
+  <header>
+    <div class="nav">
+      <div class="logo">
+        <div class="logo-icon">✂</div>
+        KUT<span>KING</span>
+      </div>
+      <div class="nav-right">
+        <span class="badge-barber">✂ Barber Dashboard</span>
+        <button class="btn-lock" onclick="lockDashboard()">🔒 Lock</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Today's Bookings</div>
+        <div class="stat-val" id="statToday">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pending Verification</div>
+        <div class="stat-val" id="statPending">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Cuts (all time)</div>
+        <div class="stat-val" id="statTotal">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Free Cuts Earned</div>
+        <div class="stat-val" id="statFree">—</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('verify')">✅ Verify Cut</button>
+      <button class="tab" onclick="switchTab('bookings')">📋 All Bookings</button>
+    </div>
+
+    <!-- ── VERIFY PANEL ── -->
+    <div class="panel active" id="panel-verify">
+      <div class="verify-grid">
+
+        <!-- Lookup by ID -->
+        <div class="card">
+          <h3>🔍 Lookup Client</h3>
+          <div class="form-group">
+            <label>Barber ID</label>
+            <input type="text" id="lookupId" placeholder="CUT-XXXX" maxlength="8" oninput="this.value=this.value.toUpperCase()" />
+          </div>
+          <button class="btn btn-gold" onclick="lookupClient()">Look Up →</button>
+
+          <div class="result-box" id="lookupResult">
+            <div class="free-badge" id="lookupFreeBadge">🎉 FREE CUT UNLOCKED</div>
+            <div class="result-row">
+              <span class="result-key">Barber ID</span>
+              <span class="result-val id-chip" id="rId">—</span>
+            </div>
+            <div class="result-row">
+              <span class="result-key">Points</span>
+              <span class="result-val" id="rPts">—</span>
+            </div>
+            <div class="pts-bar-wrap"><div class="pts-bar" id="rBar" style="width:0%"></div></div>
+            <div class="pts-labels"><span>0</span><span>80 = Free Cut</span></div>
+            <div class="action-btns">
+              <button class="btn btn-green" id="btnVerify" onclick="verifyAndAddPoints()">✔ Verify Cut (+20 pts)</button>
+              <button class="btn btn-red"   id="btnRedeem" onclick="redeemFreeCut()" style="display:none">🎁 Redeem Free Cut</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick verify from today's bookings -->
+        <div class="card">
+          <h3>📅 Today's Schedule</h3>
+          <div id="todayList" style="display:flex;flex-direction:column;gap:10px;">
+            <div class="empty-state">Loading…</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── BOOKINGS PANEL ── -->
+    <div class="panel" id="panel-bookings">
+      <div class="table-controls">
+        <input type="date" id="filterDate" onchange="loadBookings()" />
+        <select id="filterStatus" onchange="loadBookings()">
+          <option value="">All statuses</option>
+          <option value="false">Pending</option>
+          <option value="true">Verified</option>
+        </select>
+        <input type="text" id="filterSearch" placeholder="Search name or ID…"
+               oninput="loadBookings()" style="width:200px;" />
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Barber ID</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Style</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="bookingsBody">
+              <tr><td colspan="8" class="empty-state">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── TOAST ─────────────────────────────────────────────── -->
+<div class="toast" id="toast"></div>
+
+<!-- ── SCRIPTS ───────────────────────────────────────────── -->
+<script>
+  /* ════════════════════════════════════════════════════════
+     CONFIGURATION
+     Replace these 3 values (same as index.html)
+     and set your own BARBER_PIN (4 digits)
+  ════════════════════════════════════════════════════════ */
+  const SUPABASE_URL      = 'https://nbepmbdjmkvbyrlkmseg.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5iZXBtYmRqbWt2YnlybGttc2VnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNTgwNDksImV4cCI6MjA5MzkzNDA0OX0.aIk3yedRY2wUTNYTwcDhnKRVlDLvx-vn7qU8gs89g_U';
+  const BARBER_PIN        = '2026';
+
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  /* ── PIN logic ── */
+  let pinEntry = '';
+
+  function pinPress(digit) {
+    if (pinEntry.length >= 4) return;
+    pinEntry += digit;
+    updateDots();
+    if (pinEntry.length === 4) setTimeout(checkPin, 120);
+  }
+
+  function pinDel() {
+    pinEntry = pinEntry.slice(0, -1);
+    updateDots();
+    document.getElementById('pinErr').textContent = '';
+  }
+
+  function updateDots(state) {
+    for (let i = 0; i < 4; i++) {
+      const d = document.getElementById('d' + i);
+      d.className = 'pin-dot';
+      if (state === 'error') d.classList.add('error');
+      else if (i < pinEntry.length) d.classList.add('filled');
+    }
+  }
+
+  function checkPin() {
+    if (pinEntry === BARBER_PIN) {
+      document.getElementById('pinScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      sessionStorage.setItem('kk_auth', '1');
+      initDashboard();
+    } else {
+      updateDots('error');
+      document.getElementById('pinErr').textContent = 'Incorrect PIN. Try again.';
+      setTimeout(() => { pinEntry = ''; updateDots(); document.getElementById('pinErr').textContent = ''; }, 1000);
+    }
+  }
+
+  function lockDashboard() {
+    sessionStorage.removeItem('kk_auth');
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('pinScreen').style.display = 'flex';
+    pinEntry = ''; updateDots();
+  }
+
+  // Stay unlocked on page refresh if session active
+  if (sessionStorage.getItem('kk_auth') === '1') {
+    document.getElementById('pinScreen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    initDashboard();
+  }
+
+  /* ── TOAST ── */
+  function toast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast show ${type}`;
+    setTimeout(() => { t.className = 'toast'; }, 3000);
+  }
+
+  /* ── TABS ── */
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((t,i) => {
+      t.classList.toggle('active', ['verify','bookings'][i] === name);
+    });
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    if (name === 'bookings') loadBookings();
+  }
+
+  /* ── INIT ── */
+  async function initDashboard() {
+    await loadStats();
+    await loadTodaySchedule();
+    // Set filter date to today
+    document.getElementById('filterDate').value = new Date().toISOString().split('T')[0];
+  }
+
+  /* ── STATS ── */
+  async function loadStats() {
+    const today = new Date().toISOString().split('T')[0];
+    const { data: todayData } = await db.from('bookings').select('id, verified').eq('date', today);
+    const { data: allData }   = await db.from('bookings').select('id, verified');
+    const { data: ptsData }   = await db.from('points').select('points');
+
+    const todayCount   = (todayData || []).length;
+    const pendingCount = (todayData || []).filter(r => !r.verified).length;
+    const totalVerified= (allData   || []).filter(r =>  r.verified).length;
+    const freeCuts     = (ptsData   || []).filter(r => r.points >= 80).length;
+
+    document.getElementById('statToday').textContent   = todayCount;
+    document.getElementById('statPending').textContent = pendingCount;
+    document.getElementById('statTotal').textContent   = totalVerified;
+    document.getElementById('statFree').textContent    = freeCuts;
+  }
+
+  /* ── TODAY SCHEDULE ── */
+  async function loadTodaySchedule() {
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await db.from('bookings').select('*').eq('date', today).order('time');
+    const list = document.getElementById('todayList');
+
+    if (!data || data.length === 0) {
+      list.innerHTML = '<div class="empty-state">No bookings today.</div>'; return;
+    }
+
+    list.innerHTML = data.map(b => `
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  background:rgba(255,255,255,.03);border:1px solid rgba(200,151,58,.12);
+                  border-radius:6px;padding:12px 16px;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--gold);">${b.barber_id}</div>
+          <div style="font-size:13px;margin-top:2px;">${b.name} · ${b.time}</div>
+          <div style="font-size:11px;color:rgba(245,239,227,.4);margin-top:2px;">${b.style}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="status-chip ${b.verified ? 'verified' : 'pending'}">${b.verified ? '✔ Done' : 'Pending'}</span>
+          ${!b.verified ? `<button class="tbl-verify-btn" onclick="quickVerify('${b.barber_id}', '${b.id}', this)">Verify</button>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  /* ── LOOKUP CLIENT ── */
+  async function lookupClient() {
+    const id = document.getElementById('lookupId').value.trim().toUpperCase();
+    if (!id) { toast('Enter a Barber ID first.', 'error'); return; }
+
+    const { data, error } = await db.from('points').select('points').eq('barber_id', id).maybeSingle();
+    const pts = data ? data.points : 0;
+    const pct = Math.min((pts / 80) * 100, 100);
+
+    document.getElementById('rId').textContent  = id;
+    document.getElementById('rPts').textContent = pts + ' / 80';
+    document.getElementById('rBar').style.width = pct + '%';
+
+    const freeBadge = document.getElementById('lookupFreeBadge');
+    const btnRedeem = document.getElementById('btnRedeem');
+    const btnVerify = document.getElementById('btnVerify');
+
+    if (pts >= 80) {
+      freeBadge.style.display = 'block';
+      btnRedeem.style.display = 'block';
+      btnVerify.style.display = 'none';
+    } else {
+      freeBadge.style.display = 'none';
+      btnRedeem.style.display = 'none';
+      btnVerify.style.display = 'block';
+    }
+
+    document.getElementById('lookupResult').classList.add('show');
+  }
+
+  /* ── VERIFY CUT (add 20 pts) ── */
+  async function verifyAndAddPoints() {
+    const id = document.getElementById('lookupId').value.trim().toUpperCase();
+    if (!id) return;
+
+    document.getElementById('btnVerify').disabled = true;
+    document.getElementById('btnVerify').textContent = 'Saving…';
+
+    // Upsert points row
+    const { data: existing } = await db.from('points').select('points').eq('barber_id', id).maybeSingle();
+    const current = existing ? existing.points : 0;
+    const newPts  = current + 20;
+
+    const { error } = existing
+      ? await db.from('points').update({ points: newPts, updated_at: new Date().toISOString() }).eq('barber_id', id)
+      : await db.from('points').insert({ barber_id: id, points: 20 });
+
+    // Mark latest pending booking as verified
+    await db.from('bookings')
+      .update({ verified: true })
+      .eq('barber_id', id)
+      .eq('verified', false)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (!error) {
+      toast(`✔ Cut verified! ${id} now has ${newPts} points.`);
+      document.getElementById('rPts').textContent = newPts + ' / 80';
+      document.getElementById('rBar').style.width = Math.min((newPts/80)*100,100) + '%';
+      if (newPts >= 80) {
+        document.getElementById('lookupFreeBadge').style.display = 'block';
+        document.getElementById('btnRedeem').style.display = 'block';
+        document.getElementById('btnVerify').style.display = 'none';
+      }
+      await loadStats();
+      await loadTodaySchedule();
+    } else {
+      toast('Error saving points. Try again.', 'error');
+    }
+
+    document.getElementById('btnVerify').disabled = false;
+    document.getElementById('btnVerify').textContent = '✔ Verify Cut (+20 pts)';
+  }
+
+  /* ── REDEEM FREE CUT (reset to 0) ── */
+  async function redeemFreeCut() {
+    const id = document.getElementById('lookupId').value.trim().toUpperCase();
+    if (!id) return;
+    if (!confirm(`Redeem free cut for ${id}? This resets their points to 0.`)) return;
+
+    await db.from('points').update({ points: 0, updated_at: new Date().toISOString() }).eq('barber_id', id);
+    await db.from('bookings').update({ verified: true }).eq('barber_id', id).eq('verified', false).limit(1);
+
+    toast(`🎁 Free cut redeemed! ${id} points reset to 0.`);
+    document.getElementById('rPts').textContent = '0 / 80';
+    document.getElementById('rBar').style.width = '0%';
+    document.getElementById('lookupFreeBadge').style.display = 'none';
+    document.getElementById('btnRedeem').style.display = 'none';
+    document.getElementById('btnVerify').style.display = 'block';
+    await loadStats();
+  }
+
+  /* ── QUICK VERIFY from today's list ── */
+  async function quickVerify(barberId, bookingId, btn) {
+    btn.disabled = true; btn.textContent = '…';
+
+    const { data: existing } = await db.from('points').select('points').eq('barber_id', barberId).maybeSingle();
+    const current = existing ? existing.points : 0;
+    const newPts  = current + 20;
+
+    existing
+      ? await db.from('points').update({ points: newPts, updated_at: new Date().toISOString() }).eq('barber_id', barberId)
+      : await db.from('points').insert({ barber_id: barberId, points: 20 });
+
+    await db.from('bookings').update({ verified: true }).eq('id', bookingId);
+
+    toast(`✔ ${barberId} verified — ${newPts} pts`);
+    await loadStats();
+    await loadTodaySchedule();
+  }
+
+  /* ── ALL BOOKINGS TABLE ── */
+  async function loadBookings() {
+    const date   = document.getElementById('filterDate').value;
+    const status = document.getElementById('filterStatus').value;
+    const search = document.getElementById('filterSearch').value.trim().toLowerCase();
+
+    let query = db.from('bookings').select('*').order('created_at', { ascending: false });
+    if (date)   query = query.eq('date', date);
+    if (status !== '') query = query.eq('verified', status === 'true');
+
+    const { data, error } = await query;
+    let rows = data || [];
+
+    if (search) rows = rows.filter(r =>
+      r.name?.toLowerCase().includes(search) ||
+      r.barber_id?.toLowerCase().includes(search)
+    );
+
+    const tbody = document.getElementById('bookingsBody');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No bookings found.</td></tr>'; return;
+    }
+
+    tbody.innerHTML = rows.map(b => `
+      <tr>
+        <td><span class="id-chip">${b.barber_id}</span></td>
+        <td>${b.name || '—'}</td>
+        <td>${b.phone || '—'}</td>
+        <td>${b.style || '—'}</td>
+        <td>${b.date || '—'}</td>
+        <td>${b.time || '—'}</td>
+        <td><span class="status-chip ${b.verified ? 'verified' : 'pending'}">${b.verified ? '✔ Verified' : 'Pending'}</span></td>
+        <td>${!b.verified
+          ? `<button class="tbl-verify-btn" onclick="quickVerify('${b.barber_id}','${b.id}',this)">Verify</button>`
+          : '<span style="font-size:11px;color:rgba(245,239,227,.3);">Done</span>'
+        }</td>
+      </tr>
+    `).join('');
+  }
+</script>
+
+</body>
+</html>
