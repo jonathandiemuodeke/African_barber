@@ -1,1056 +1,1364 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KutKing Barbershop – Afro Cuts, King Finish</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
-  <!-- EmailJS – sends booking emails to barber -->
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <!-- Supabase – persistent points & bookings database -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <style>
-    /* ── TOKENS ─────────────────────────────────────────── */
-    :root {
-      --ink:    #0e0b07;
-      --cream:  #f5efe3;
-      --gold:   #c8973a;
-      --ember:  #e05c2a;
-      --bark:   #3a2710;
-      --moss:   #2d4a1e;
-      --wa:     #25d366;
-      --radius: 4px;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AfroKuts Barbershop – Afro Cuts, King Finish</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
 
-    /* ── RESET ──────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: 'Sora', sans-serif;
-      background: var(--ink);
-      color: var(--cream);
-      overflow-x: hidden;
-    }
-    a { color: inherit; text-decoration: none; }
-    img { display: block; max-width: 100%; }
+    <style>
+      /* ── TOKENS ─────────────────────────────────────────── */
+      :root {
+        --ink: #0e0b07;
+        --cream: #f5efe3;
+        --gold: #c8973a;
+        --ember: #e05c2a;
+        --bark: #3a2710;
+        --moss: #2d4a1e;
+        --wa: #25d366;
+        --radius: 4px;
+      }
 
-    /* ── NOISE OVERLAY ──────────────────────────────────── */
-    body::before {
-      content: '';
-      position: fixed; inset: 0; z-index: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      pointer-events: none;
-    }
+      /* ── RESET ──────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: "Sora", sans-serif;
+        background: var(--ink);
+        color: var(--cream);
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      img {
+        display: block;
+        max-width: 100%;
+      }
 
-    /* ── UTIL ───────────────────────────────────────────── */
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-    .gold { color: var(--gold); }
-    .tag {
-      display: inline-block;
-      font-family: 'Space Mono', monospace;
-      font-size: 11px;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: var(--gold);
-      border: 1px solid var(--gold);
-      padding: 4px 10px;
-      border-radius: 2px;
-      margin-bottom: 16px;
-    }
+      /* ── NOISE OVERLAY ──────────────────────────────────── */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+        pointer-events: none;
+      }
 
-    /* ── HEADER ─────────────────────────────────────────── */
-    header {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(14,11,7,.92);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(200,151,58,.25);
-    }
-    .nav {
-      display: flex; align-items: center; justify-content: space-between;
-      height: 70px;
-    }
-    .logo {
-      display: flex; align-items: center; gap: 10px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px;
-      letter-spacing: 2px;
-    }
-    .logo-icon {
-      width: 38px; height: 38px;
-      background: var(--gold);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
-    }
-    .logo span { color: var(--gold); }
-    .nav-links { display: flex; align-items: center; gap: 8px; }
-    .nav-links a {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      padding: 8px 18px;
-      border-radius: 2px;
-      transition: background .2s, color .2s;
-    }
-    .nav-links a:hover { background: rgba(200,151,58,.15); color: var(--gold); }
-    .nav-links .cta {
-      background: var(--gold);
-      color: var(--ink);
-      font-weight: 700;
-    }
-    .nav-links .cta:hover { background: #e0a83d; color: var(--ink); }
+      /* ── UTIL ───────────────────────────────────────────── */
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      .gold {
+        color: var(--gold);
+      }
+      .tag {
+        display: inline-block;
+        font-family: "Space Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--gold);
+        border: 1px solid var(--gold);
+        padding: 4px 10px;
+        border-radius: 2px;
+        margin-bottom: 16px;
+      }
 
-    /* ── HERO ───────────────────────────────────────────── */
-    .hero {
-      position: relative;
-      min-height: 92vh;
-      display: flex; align-items: center;
-      overflow: hidden;
-    }
-    .hero-bg {
-      position: absolute; inset: 0; z-index: 0;
-      background:
-        radial-gradient(ellipse 60% 80% at 80% 50%, rgba(200,151,58,.18) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 60% at 20% 80%, rgba(224,92,42,.12) 0%, transparent 60%),
-        linear-gradient(160deg, #1a1008 0%, #0e0b07 60%);
-    }
-    .hero-pattern {
-      position: absolute; right: -60px; top: 50%;
-      transform: translateY(-50%);
-      width: 580px; height: 580px;
-      opacity: .06;
-      background-image:
-        repeating-linear-gradient(45deg, var(--gold) 0, var(--gold) 1px, transparent 0, transparent 50%),
-        repeating-linear-gradient(-45deg, var(--gold) 0, var(--gold) 1px, transparent 0, transparent 50%);
-      background-size: 30px 30px;
-    }
-    .hero-content {
-      position: relative; z-index: 1;
-      max-width: 680px;
-      animation: fadeUp .9s ease both;
-    }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .hero h1 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(64px, 10vw, 130px);
-      line-height: .92;
-      letter-spacing: 2px;
-      margin-bottom: 24px;
-    }
-    .hero h1 em { color: var(--gold); font-style: normal; }
-    .hero p {
-      font-size: clamp(15px, 2vw, 18px);
-      line-height: 1.7;
-      color: rgba(245,239,227,.7);
-      max-width: 500px;
-      margin-bottom: 40px;
-    }
-    .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      padding: 14px 28px;
-      border-radius: 3px;
-      cursor: pointer;
-      transition: transform .15s, box-shadow .15s;
-      border: none;
-    }
-    .btn:hover { transform: translateY(-2px); }
-    .btn-gold {
-      background: var(--gold); color: var(--ink); font-weight: 700;
-      box-shadow: 0 4px 24px rgba(200,151,58,.35);
-    }
-    .btn-gold:hover { box-shadow: 0 8px 32px rgba(200,151,58,.5); }
-    .btn-outline {
-      background: transparent; color: var(--cream);
-      border: 1px solid rgba(245,239,227,.3);
-    }
-    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
-    .hero-scroll {
-      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      letter-spacing: 3px; color: rgba(245,239,227,.4);
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
-    }
-    .hero-scroll::after {
-      content: '';
-      display: block; width: 1px; height: 40px;
-      background: linear-gradient(to bottom, rgba(200,151,58,.6), transparent);
-      animation: pulse 1.8s ease infinite;
-    }
-    @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+      /* ── HEADER ─────────────────────────────────────────── */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(14, 11, 7, 0.92);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(200, 151, 58, 0.25);
+      }
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 70px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 28px;
+        letter-spacing: 2px;
+      }
+      .logo-icon {
+        width: 38px;
+        height: 38px;
+        background: var(--gold);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+      }
+      .logo span {
+        color: var(--gold);
+      }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .nav-links a {
+        font-family: "Space Mono", monospace;
+        font-size: 12px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        padding: 8px 18px;
+        border-radius: 2px;
+        transition:
+          background 0.2s,
+          color 0.2s;
+      }
+      .nav-links a:hover {
+        background: rgba(200, 151, 58, 0.15);
+        color: var(--gold);
+      }
+      .nav-links .cta {
+        background: var(--gold);
+        color: var(--ink);
+        font-weight: 700;
+      }
+      .nav-links .cta:hover {
+        background: #e0a83d;
+        color: var(--ink);
+      }
 
-    /* ── STYLES SECTION ─────────────────────────────────── */
-    .styles-section { padding: 100px 0; }
-    .section-head { text-align: center; margin-bottom: 60px; }
-    .section-head h2 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(40px, 6vw, 72px);
-      letter-spacing: 2px;
-    }
-    .section-head p {
-      font-size: 15px; color: rgba(245,239,227,.6);
-      max-width: 440px; margin: 12px auto 0;
-    }
-    .styles-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 24px;
-    }
-    .style-card {
-      border-radius: 6px;
-      overflow: hidden;
-      background: rgba(255,255,255,.03);
-      border: 1px solid rgba(200,151,58,.12);
-      transition: transform .25s, border-color .25s, box-shadow .25s;
-      cursor: default;
-    }
-    .style-card:hover {
-      transform: translateY(-6px);
-      border-color: rgba(200,151,58,.45);
-      box-shadow: 0 16px 48px rgba(0,0,0,.4);
-    }
-    .style-img {
-      height: 200px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 80px;
-      position: relative; overflow: hidden;
-    }
-    /* Distinct gradient bg per card */
-    .style-card:nth-child(1) .style-img { background: linear-gradient(135deg,#2d1a06,#4a2c0d); }
-    .style-card:nth-child(2) .style-img { background: linear-gradient(135deg,#1a2d06,#2a4010); }
-    .style-card:nth-child(3) .style-img { background: linear-gradient(135deg,#06192d,#0d2a40); }
-    .style-card:nth-child(4) .style-img { background: linear-gradient(135deg,#2d0619,#400d2a); }
-    .style-card:nth-child(5) .style-img { background: linear-gradient(135deg,#1a1a06,#30300a); }
-    .style-card:nth-child(6) .style-img { background: linear-gradient(135deg,#0d0d0d,#222); }
-    .style-img::after {
-      content: '';
-      position: absolute; bottom: 0; left: 0; right: 0; height: 60px;
-      background: linear-gradient(to top, rgba(14,11,7,.9), transparent);
-    }
-    .style-info { padding: 18px 20px 22px; }
-    .style-info h3 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 22px; letter-spacing: 1px;
-      margin-bottom: 6px;
-    }
-    .style-info p { font-size: 13px; color: rgba(245,239,227,.55); line-height: 1.5; }
-    .style-badge {
-      display: inline-block;
-      margin-top: 10px;
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; letter-spacing: 1px;
-      background: rgba(200,151,58,.15);
-      color: var(--gold);
-      border: 1px solid rgba(200,151,58,.3);
-      padding: 3px 8px; border-radius: 2px;
-    }
+      /* ── HERO ───────────────────────────────────────────── */
+      .hero {
+        position: relative;
+        min-height: 92vh;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+      }
+      .hero-bg {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background:
+          radial-gradient(
+            ellipse 60% 80% at 80% 50%,
+            rgba(200, 151, 58, 0.18) 0%,
+            transparent 70%
+          ),
+          radial-gradient(
+            ellipse 40% 60% at 20% 80%,
+            rgba(224, 92, 42, 0.12) 0%,
+            transparent 60%
+          ),
+          linear-gradient(160deg, #1a1008 0%, #0e0b07 60%);
+      }
+      .hero-pattern {
+        position: absolute;
+        right: -60px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 580px;
+        height: 580px;
+        opacity: 0.06;
+        background-image:
+          repeating-linear-gradient(
+            45deg,
+            var(--gold) 0,
+            var(--gold) 1px,
+            transparent 0,
+            transparent 50%
+          ),
+          repeating-linear-gradient(
+            -45deg,
+            var(--gold) 0,
+            var(--gold) 1px,
+            transparent 0,
+            transparent 50%
+          );
+        background-size: 30px 30px;
+      }
+      .hero-content {
+        position: relative;
+        z-index: 1;
+        max-width: 680px;
+        animation: fadeUp 0.9s ease both;
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .hero h1 {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: clamp(64px, 10vw, 130px);
+        line-height: 0.92;
+        letter-spacing: 2px;
+        margin-bottom: 24px;
+      }
+      .hero h1 em {
+        color: var(--gold);
+        font-style: normal;
+      }
+      .hero p {
+        font-size: clamp(15px, 2vw, 18px);
+        line-height: 1.7;
+        color: rgba(245, 239, 227, 0.7);
+        max-width: 500px;
+        margin-bottom: 40px;
+      }
+      .hero-btns {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "Space Mono", monospace;
+        font-size: 12px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        padding: 14px 28px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition:
+          transform 0.15s,
+          box-shadow 0.15s;
+        border: none;
+      }
+      .btn:hover {
+        transform: translateY(-2px);
+      }
+      .btn-gold {
+        background: var(--gold);
+        color: var(--ink);
+        font-weight: 700;
+        box-shadow: 0 4px 24px rgba(200, 151, 58, 0.35);
+      }
+      .btn-gold:hover {
+        box-shadow: 0 8px 32px rgba(200, 151, 58, 0.5);
+      }
+      .btn-outline {
+        background: transparent;
+        color: var(--cream);
+        border: 1px solid rgba(245, 239, 227, 0.3);
+      }
+      .btn-outline:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+      .hero-scroll {
+        position: absolute;
+        bottom: 32px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 3px;
+        color: rgba(245, 239, 227, 0.4);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .hero-scroll::after {
+        content: "";
+        display: block;
+        width: 1px;
+        height: 40px;
+        background: linear-gradient(
+          to bottom,
+          rgba(200, 151, 58, 0.6),
+          transparent
+        );
+        animation: pulse 1.8s ease infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.4;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
 
-    /* ── LOCATION STRIP ─────────────────────────────────── */
-    .location-strip {
-      background: rgba(200,151,58,.07);
-      border-top: 1px solid rgba(200,151,58,.15);
-      border-bottom: 1px solid rgba(200,151,58,.15);
-      padding: 36px 0;
-    }
-    .location-inner {
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 24px;
-    }
-    .loc-item { display: flex; align-items: flex-start; gap: 14px; }
-    .loc-icon {
-      width: 44px; height: 44px; flex-shrink: 0;
-      background: rgba(200,151,58,.2);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
-    }
-    .loc-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; letter-spacing: 2px;
-      text-transform: uppercase; color: var(--gold);
-      margin-bottom: 4px;
-    }
-    .loc-val { font-size: 14px; color: rgba(245,239,227,.85); }
+      /* ── STYLES SECTION ─────────────────────────────────── */
+      .styles-section {
+        padding: 100px 0;
+      }
+      .section-head {
+        text-align: center;
+        margin-bottom: 60px;
+      }
+      .section-head h2 {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: clamp(40px, 6vw, 72px);
+        letter-spacing: 2px;
+      }
+      .section-head p {
+        font-size: 15px;
+        color: rgba(245, 239, 227, 0.6);
+        max-width: 440px;
+        margin: 12px auto 0;
+      }
+      .styles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 24px;
+      }
+      .style-card {
+        border-radius: 6px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(200, 151, 58, 0.12);
+        transition:
+          transform 0.25s,
+          border-color 0.25s,
+          box-shadow 0.25s;
+        cursor: default;
+      }
+      .style-card:hover {
+        transform: translateY(-6px);
+        border-color: rgba(200, 151, 58, 0.45);
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+      }
+      .style-img {
+        height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 80px;
+        position: relative;
+        overflow: hidden;
+      }
+      /* Distinct gradient bg per card */
+      .style-card:nth-child(1) .style-img {
+        background: linear-gradient(135deg, #2d1a06, #4a2c0d);
+      }
+      .style-card:nth-child(2) .style-img {
+        background: linear-gradient(135deg, #1a2d06, #2a4010);
+      }
+      .style-card:nth-child(3) .style-img {
+        background: linear-gradient(135deg, #06192d, #0d2a40);
+      }
+      .style-card:nth-child(4) .style-img {
+        background: linear-gradient(135deg, #2d0619, #400d2a);
+      }
+      .style-card:nth-child(5) .style-img {
+        background: linear-gradient(135deg, #1a1a06, #30300a);
+      }
+      .style-card:nth-child(6) .style-img {
+        background: linear-gradient(135deg, #0d0d0d, #222);
+      }
+      .style-img::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: linear-gradient(to top, rgba(14, 11, 7, 0.9), transparent);
+      }
+      .style-info {
+        padding: 18px 20px 22px;
+      }
+      .style-info h3 {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 22px;
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+      }
+      .style-info p {
+        font-size: 13px;
+        color: rgba(245, 239, 227, 0.55);
+        line-height: 1.5;
+      }
+      .style-badge {
+        display: inline-block;
+        margin-top: 10px;
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 1px;
+        background: rgba(200, 151, 58, 0.15);
+        color: var(--gold);
+        border: 1px solid rgba(200, 151, 58, 0.3);
+        padding: 3px 8px;
+        border-radius: 2px;
+      }
 
-    /* ── BOOKING SECTION ────────────────────────────────── */
-    .booking-section { padding: 100px 0; }
-    .booking-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 60px;
-      align-items: start;
-    }
-    .booking-left h2 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(42px, 5vw, 68px);
-      line-height: .95; letter-spacing: 2px;
-      margin-bottom: 20px;
-    }
-    .booking-left p {
-      font-size: 14px;
-      color: rgba(245,239,227,.6);
-      line-height: 1.8;
-      margin-bottom: 28px;
-    }
-    .loyalty-box {
-      background: rgba(200,151,58,.08);
-      border: 1px solid rgba(200,151,58,.25);
-      border-radius: 6px;
-      padding: 20px 22px;
-    }
-    .loyalty-box h4 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px; letter-spacing: 1px;
-      color: var(--gold); margin-bottom: 10px;
-    }
-    .loyalty-box p { font-size: 13px; color: rgba(245,239,227,.65); line-height: 1.7; }
-    .loyalty-steps {
-      list-style: none; margin-top: 14px;
-      display: flex; flex-direction: column; gap: 8px;
-    }
-    .loyalty-steps li {
-      font-size: 12px;
-      display: flex; align-items: center; gap: 10px;
-      color: rgba(245,239,227,.7);
-    }
-    .step-num {
-      width: 22px; height: 22px; flex-shrink: 0;
-      background: var(--gold); color: var(--ink);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; font-weight: 700;
-    }
+      /* ── LOCATION STRIP ─────────────────────────────────── */
+      .location-strip {
+        background: rgba(200, 151, 58, 0.07);
+        border-top: 1px solid rgba(200, 151, 58, 0.15);
+        border-bottom: 1px solid rgba(200, 151, 58, 0.15);
+        padding: 36px 0;
+      }
+      .location-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 24px;
+      }
+      .loc-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+      }
+      .loc-icon {
+        width: 44px;
+        height: 44px;
+        flex-shrink: 0;
+        background: rgba(200, 151, 58, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+      }
+      .loc-label {
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 4px;
+      }
+      .loc-val {
+        font-size: 14px;
+        color: rgba(245, 239, 227, 0.85);
+      }
 
-    /* FORM */
-    .booking-form {
-      background: rgba(255,255,255,.03);
-      border: 1px solid rgba(200,151,58,.18);
-      border-radius: 8px;
-      padding: 36px 32px;
-    }
-    .booking-form h3 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px; letter-spacing: 1px;
-      margin-bottom: 24px;
-    }
-    .form-row { display: flex; gap: 14px; }
-    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; flex: 1; }
-    .form-group label {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; letter-spacing: 2px;
-      text-transform: uppercase; color: rgba(245,239,227,.5);
-    }
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(200,151,58,.2);
-      border-radius: 3px;
-      padding: 11px 14px;
-      color: var(--cream);
-      font-family: 'Sora', sans-serif;
-      font-size: 14px;
-      outline: none;
-      transition: border-color .2s;
-      width: 100%;
-    }
-    .form-group input::placeholder,
-    .form-group textarea::placeholder { color: rgba(245,239,227,.25); }
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus { border-color: var(--gold); }
-    .form-group select option { background: #1a1208; }
-    .form-group textarea { resize: vertical; min-height: 80px; }
-    .id-display {
-      background: rgba(200,151,58,.12);
-      border: 1px dashed rgba(200,151,58,.4);
-      border-radius: 4px;
-      padding: 12px 14px;
-      margin-bottom: 16px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .id-display span:first-child {
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      letter-spacing: 2px; color: var(--gold); text-transform: uppercase;
-    }
-    .id-value {
-      font-family: 'Space Mono', monospace; font-size: 18px;
-      font-weight: 700; color: var(--gold);
-      letter-spacing: 3px;
-    }
-    .id-note {
-      font-size: 11px; color: rgba(245,239,227,.45);
-      margin-bottom: 16px; font-style: italic;
-    }
-    .slot-suggestion {
-      display: none;
-      background: rgba(224,92,42,.1);
-      border: 1px solid rgba(224,92,42,.3);
-      border-radius: 4px;
-      padding: 12px 14px;
-      margin-bottom: 16px;
-      font-size: 13px; color: rgba(245,239,227,.8);
-    }
-    .slot-suggestion strong { color: var(--ember); }
-    .btn-submit {
-      width: 100%;
-      justify-content: center;
-      font-size: 13px;
-      padding: 15px;
-      margin-top: 8px;
-    }
-    .form-success {
-      display: none;
-      text-align: center; padding: 30px 0;
-    }
-    .form-success .tick { font-size: 48px; margin-bottom: 12px; }
-    .form-success h4 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px; letter-spacing: 1px;
-      color: var(--gold); margin-bottom: 8px;
-    }
-    .form-success p { font-size: 13px; color: rgba(245,239,227,.65); }
-    .form-success .booked-id {
-      font-family: 'Space Mono', monospace;
-      font-size: 22px; font-weight: 700;
-      color: var(--gold); letter-spacing: 4px;
-      display: block; margin: 16px 0 10px;
-    }
+      /* ── BOOKING SECTION ────────────────────────────────── */
+      .booking-section {
+        padding: 100px 0;
+      }
+      .booking-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 60px;
+        align-items: start;
+      }
+      .booking-left h2 {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: clamp(42px, 5vw, 68px);
+        line-height: 0.95;
+        letter-spacing: 2px;
+        margin-bottom: 20px;
+      }
+      .booking-left p {
+        font-size: 14px;
+        color: rgba(245, 239, 227, 0.6);
+        line-height: 1.8;
+        margin-bottom: 28px;
+      }
+      .loyalty-box {
+        background: rgba(200, 151, 58, 0.08);
+        border: 1px solid rgba(200, 151, 58, 0.25);
+        border-radius: 6px;
+        padding: 20px 22px;
+      }
+      .loyalty-box h4 {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 20px;
+        letter-spacing: 1px;
+        color: var(--gold);
+        margin-bottom: 10px;
+      }
+      .loyalty-box p {
+        font-size: 13px;
+        color: rgba(245, 239, 227, 0.65);
+        line-height: 1.7;
+      }
+      .loyalty-steps {
+        list-style: none;
+        margin-top: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .loyalty-steps li {
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: rgba(245, 239, 227, 0.7);
+      }
+      .step-num {
+        width: 22px;
+        height: 22px;
+        flex-shrink: 0;
+        background: var(--gold);
+        color: var(--ink);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        font-weight: 700;
+      }
 
-    /* ── POINTS MODAL ───────────────────────────────────── */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; z-index: 200;
-      background: rgba(0,0,0,.75);
-      backdrop-filter: blur(6px);
-      align-items: center; justify-content: center;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal {
-      background: #1a1208;
-      border: 1px solid rgba(200,151,58,.3);
-      border-radius: 10px;
-      padding: 40px 36px;
-      width: 100%; max-width: 440px;
-      position: relative;
-      animation: fadeUp .3s ease both;
-    }
-    .modal-close {
-      position: absolute; top: 16px; right: 18px;
-      background: none; border: none; color: rgba(245,239,227,.4);
-      font-size: 22px; cursor: pointer; line-height: 1;
-    }
-    .modal-close:hover { color: var(--cream); }
-    .modal h3 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 30px; letter-spacing: 1px;
-      margin-bottom: 6px; color: var(--gold);
-    }
-    .modal p.sub { font-size: 13px; color: rgba(245,239,227,.5); margin-bottom: 24px; }
-    .points-result { display: none; }
-    .points-bar-wrap {
-      background: rgba(255,255,255,.06);
-      border-radius: 99px; height: 12px;
-      overflow: hidden; margin: 20px 0 8px;
-    }
-    .points-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--gold), var(--ember));
-      border-radius: 99px;
-      transition: width 1s cubic-bezier(.22,1,.36,1);
-    }
-    .points-labels {
-      display: flex; justify-content: space-between;
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; color: rgba(245,239,227,.4);
-      letter-spacing: 1px;
-    }
-    .points-big {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 64px; line-height: 1;
-      color: var(--gold); margin-top: 16px;
-    }
-    .points-big span { font-size: 20px; color: rgba(245,239,227,.4); }
-    .points-msg {
-      font-size: 13px; color: rgba(245,239,227,.65);
-      margin: 8px 0 20px; line-height: 1.6;
-    }
-    .free-cut-badge {
-      background: linear-gradient(135deg, var(--gold), var(--ember));
-      color: var(--ink);
-      border-radius: 6px;
-      padding: 14px 18px;
-      text-align: center;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 22px; letter-spacing: 1px;
-      margin-bottom: 16px;
-      display: none;
-    }
+      /* FORM */
+      .booking-form {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(200, 151, 58, 0.18);
+        border-radius: 8px;
+        padding: 36px 32px;
+      }
+      .booking-form h3 {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 28px;
+        letter-spacing: 1px;
+        margin-bottom: 24px;
+      }
+      .form-row {
+        display: flex;
+        gap: 14px;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 16px;
+        flex: 1;
+      }
+      .form-group label {
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: rgba(245, 239, 227, 0.5);
+      }
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(200, 151, 58, 0.2);
+        border-radius: 3px;
+        padding: 11px 14px;
+        color: var(--cream);
+        font-family: "Sora", sans-serif;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s;
+        width: 100%;
+      }
+      .form-group input::placeholder,
+      .form-group textarea::placeholder {
+        color: rgba(245, 239, 227, 0.25);
+      }
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        border-color: var(--gold);
+      }
+      .form-group select option {
+        background: #1a1208;
+      }
+      .form-group textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+      .id-display {
+        background: rgba(200, 151, 58, 0.12);
+        border: 1px dashed rgba(200, 151, 58, 0.4);
+        border-radius: 4px;
+        padding: 12px 14px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .id-display span:first-child {
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: var(--gold);
+        text-transform: uppercase;
+      }
+      .id-value {
+        font-family: "Space Mono", monospace;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--gold);
+        letter-spacing: 3px;
+      }
+      .id-note {
+        font-size: 11px;
+        color: rgba(245, 239, 227, 0.45);
+        margin-bottom: 16px;
+        font-style: italic;
+      }
+      .slot-suggestion {
+        display: none;
+        background: rgba(224, 92, 42, 0.1);
+        border: 1px solid rgba(224, 92, 42, 0.3);
+        border-radius: 4px;
+        padding: 12px 14px;
+        margin-bottom: 16px;
+        font-size: 13px;
+        color: rgba(245, 239, 227, 0.8);
+      }
+      .slot-suggestion strong {
+        color: var(--ember);
+      }
+      .btn-submit {
+        width: 100%;
+        justify-content: center;
+        font-size: 13px;
+        padding: 15px;
+        margin-top: 8px;
+      }
+      .form-success {
+        display: none;
+        text-align: center;
+        padding: 30px 0;
+      }
+      .form-success .tick {
+        font-size: 48px;
+        margin-bottom: 12px;
+      }
+      .form-success h4 {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 28px;
+        letter-spacing: 1px;
+        color: var(--gold);
+        margin-bottom: 8px;
+      }
+      .form-success p {
+        font-size: 13px;
+        color: rgba(245, 239, 227, 0.65);
+      }
+      .form-success .booked-id {
+        font-family: "Space Mono", monospace;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--gold);
+        letter-spacing: 4px;
+        display: block;
+        margin: 16px 0 10px;
+      }
 
-    /* ── WHATSAPP FLOAT ─────────────────────────────────── */
-    .wa-float {
-      position: fixed; bottom: 28px; right: 28px; z-index: 150;
-      display: flex; align-items: center; gap: 10px;
-      background: var(--wa);
-      color: #fff;
-      border-radius: 50px;
-      padding: 12px 20px 12px 14px;
-      box-shadow: 0 6px 30px rgba(37,211,102,.4);
-      font-family: 'Space Mono', monospace;
-      font-size: 12px; letter-spacing: 1px;
-      text-transform: uppercase;
-      transition: transform .2s, box-shadow .2s;
-    }
-    .wa-float:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 40px rgba(37,211,102,.55);
-    }
-    .wa-float svg { width: 22px; height: 22px; fill: #fff; }
+      /* ── POINTS MODAL ───────────────────────────────────── */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(6px);
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-overlay.open {
+        display: flex;
+      }
+      .modal {
+        background: #1a1208;
+        border: 1px solid rgba(200, 151, 58, 0.3);
+        border-radius: 10px;
+        padding: 40px 36px;
+        width: 100%;
+        max-width: 440px;
+        position: relative;
+        animation: fadeUp 0.3s ease both;
+      }
+      .modal-close {
+        position: absolute;
+        top: 16px;
+        right: 18px;
+        background: none;
+        border: none;
+        color: rgba(245, 239, 227, 0.4);
+        font-size: 22px;
+        cursor: pointer;
+        line-height: 1;
+      }
+      .modal-close:hover {
+        color: var(--cream);
+      }
+      .modal h3 {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 30px;
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+        color: var(--gold);
+      }
+      .modal p.sub {
+        font-size: 13px;
+        color: rgba(245, 239, 227, 0.5);
+        margin-bottom: 24px;
+      }
+      .points-result {
+        display: none;
+      }
+      .points-bar-wrap {
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 99px;
+        height: 12px;
+        overflow: hidden;
+        margin: 20px 0 8px;
+      }
+      .points-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--gold), var(--ember));
+        border-radius: 99px;
+        transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .points-labels {
+        display: flex;
+        justify-content: space-between;
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        color: rgba(245, 239, 227, 0.4);
+        letter-spacing: 1px;
+      }
+      .points-big {
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 64px;
+        line-height: 1;
+        color: var(--gold);
+        margin-top: 16px;
+      }
+      .points-big span {
+        font-size: 20px;
+        color: rgba(245, 239, 227, 0.4);
+      }
+      .points-msg {
+        font-size: 13px;
+        color: rgba(245, 239, 227, 0.65);
+        margin: 8px 0 20px;
+        line-height: 1.6;
+      }
+      .free-cut-badge {
+        background: linear-gradient(135deg, var(--gold), var(--ember));
+        color: var(--ink);
+        border-radius: 6px;
+        padding: 14px 18px;
+        text-align: center;
+        font-family: "Bebas Neue", sans-serif;
+        font-size: 22px;
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+        display: none;
+      }
 
-    /* ── FOOTER ─────────────────────────────────────────── */
-    footer {
-      background: #070503;
-      border-top: 1px solid rgba(200,151,58,.12);
-      padding: 48px 0 32px;
-    }
-    .footer-inner {
-      display: flex; flex-direction: column; align-items: center; gap: 28px;
-    }
-    .footer-links {
-      display: flex; gap: 8px;
-    }
-    .footer-links a {
-      font-family: 'Space Mono', monospace;
-      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
-      padding: 8px 16px;
-      border-radius: 2px;
-      color: rgba(245,239,227,.5);
-      transition: color .2s;
-    }
-    .footer-links a:hover { color: var(--gold); }
-    .footer-loc {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 13px; color: rgba(245,239,227,.4);
-    }
-    .footer-copy {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px; letter-spacing: 1px;
-      color: rgba(245,239,227,.2);
-      text-align: center;
-    }
-    .divider {
-      width: 1px; height: 14px;
-      background: rgba(245,239,227,.15);
-    }
+      /* ── WHATSAPP FLOAT ─────────────────────────────────── */
+      .wa-float {
+        position: fixed;
+        bottom: 28px;
+        right: 28px;
+        z-index: 150;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--wa);
+        color: #fff;
+        border-radius: 50px;
+        padding: 12px 14px 12px 14px;
+        box-shadow: 0 6px 30px rgba(37, 211, 102, 0.4);
+        font-family: "Space Mono", monospace;
+        font-size: 12px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+      .wa-float:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 40px rgba(37, 211, 102, 0.55);
+      }
+      .wa-float svg {
+        width: 22px;
+        height: 22px;
+        fill: #fff;
+      }
 
-    /* ── RESPONSIVE ─────────────────────────────────────── */
-    @media (max-width: 768px) {
-      .booking-grid { grid-template-columns: 1fr; gap: 40px; }
-      .form-row { flex-direction: column; gap: 0; }
-      .location-inner { flex-direction: column; }
-      .nav-links .cta { display: block; }
-      .nav-links a:not(.cta) { display: none; }
-      .hero h1 { font-size: clamp(54px, 13vw, 80px); }
-    }
-  </style>
-</head>
-<body>
+      /* ── FOOTER ─────────────────────────────────────────── */
+      footer {
+        background: #070503;
+        border-top: 1px solid rgba(200, 151, 58, 0.12);
+        padding: 48px 0 32px;
+      }
+      .footer-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 28px;
+      }
+      .footer-links {
+        display: flex;
+        gap: 8px;
+      }
+      .footer-links a {
+        font-family: "Space Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        padding: 8px 16px;
+        border-radius: 2px;
+        color: rgba(245, 239, 227, 0.5);
+        transition: color 0.2s;
+      }
+      .footer-links a:hover {
+        color: var(--gold);
+      }
+      .footer-loc {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: rgba(245, 239, 227, 0.4);
+      }
+      .footer-copy {
+        font-family: "Space Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 1px;
+        color: rgba(245, 239, 227, 0.2);
+        text-align: center;
+      }
+      .divider {
+        width: 1px;
+        height: 14px;
+        background: rgba(245, 239, 227, 0.15);
+      }
 
-<!-- ── HEADER ──────────────────────────────────────────── -->
-<header>
-  <nav class="container nav">
-    <div class="logo">
-      <div class="logo-icon">✂</div>
-      <div>KUT<span>KING</span></div>
-    </div>
-    <div class="nav-links">
-      <a href="#booking">Book a Cut</a>
-      <a href="#" onclick="openPointsModal(); return false;">Check Points</a>
-      <a href="#booking" class="cta">Book Now</a>
-    </div>
-  </nav>
-</header>
+      /* ── RESPONSIVE ─────────────────────────────────────── */
+      .client-toggle {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+      .toggle-btn {
+        flex: 1;
+        font-family: "Space Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 10px;
+        border-radius: 3px;
+        cursor: pointer;
+        border: 1px solid rgba(200, 151, 58, 0.25);
+        background: transparent;
+        color: rgba(245, 239, 227, 0.45);
+        transition: all 0.2s;
+      }
+      .toggle-btn.active {
+        background: var(--gold);
+        color: var(--ink);
+        border-color: var(--gold);
+        font-weight: 700;
+      }
+      .toggle-btn:not(.active):hover {
+        border-color: rgba(200, 151, 58, 0.5);
+        color: var(--cream);
+      }
 
-<!-- ── HERO ────────────────────────────────────────────── -->
-<section class="hero">
-  <div class="hero-bg"></div>
-  <div class="hero-pattern"></div>
-  <div class="container">
-    <div class="hero-content">
-      <div class="tag">📍 Piața Iancului · București · Romania</div>
-      <h1>YOUR CUT,<br><em>YOUR</em><br>CROWN.</h1>
-      <p>Where Afro culture meets precision craftsmanship. Every fade, every taper, every loc — done with intention and finished like royalty.</p>
-      <div class="hero-btns">
-        <a href="#booking" class="btn btn-gold">✂ Book Your Cut</a>
-        <a href="#styles" class="btn btn-outline">Explore Styles</a>
-      </div>
-    </div>
-  </div>
-  <div class="hero-scroll">SCROLL</div>
-</section>
-
-<!-- ── HAIRSTYLES ───────────────────────────────────────── -->
-<section class="styles-section" id="styles">
-  <div class="container">
-    <div class="section-head">
-      <div class="tag">Our Craft</div>
-      <h2>AFRO STYLES<br>WE <em class="gold">MASTER</em></h2>
-      <p>From sharp fades to intricate locs — each cut is a statement. Choose your signature look.</p>
-    </div>
-    <div class="styles-grid">
-      <div class="style-card">
-        <div class="style-img">✊</div>
-        <div class="style-info">
-          <h3>Low Fade</h3>
-          <p>Clean taper from skin to full length. The everyday king cut — sharp enough for the boardroom, fresh for the weekend.</p>
-          <span class="style-badge">Most Popular</span>
+      .booking-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+      .form-row {
+        flex-direction: column;
+        gap: 0;
+      }
+      .location-inner {
+        flex-direction: column;
+      }
+      .nav-links .cta {
+        display: block;
+      }
+      .nav-links a:not(.cta) {
+        display: none;
+      }
+      .hero h1 {
+        font-size: clamp(54px, 13vw, 80px);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── HEADER ──────────────────────────────────────────── -->
+    <header>
+      <nav class="container nav">
+        <div class="logo">
+          <div class="logo-icon">✂</div>
+          <div>AFRO<span>KUTS</span></div>
         </div>
-      </div>
-      <div class="style-card">
-        <div class="style-img">🌀</div>
-        <div class="style-info">
-          <h3>Dreadlocks & Locs</h3>
-          <p>Traditional or starter locs, retwisted with care. A spiritual and cultural statement shaped with precision.</p>
-          <span class="style-badge">Heritage Cut</span>
+        <div class="nav-links">
+          <a href="#booking">Book a Cut</a>
+          <a
+            href="#"
+            onclick="
+              openPointsModal();
+              return false;
+            "
+            >Check Points</a
+          >
+          <a href="#booking" class="cta">Book Now</a>
         </div>
-      </div>
-      <div class="style-card">
-        <div class="style-img">⚡</div>
-        <div class="style-info">
-          <h3>High Top Afro</h3>
-          <p>The iconic silhouette. Volume upward, edges sharp. Bold, unapologetic, and undeniably African.</p>
-          <span class="style-badge">Statement</span>
-        </div>
-      </div>
-      <div class="style-card">
-        <div class="style-img">🔷</div>
-        <div class="style-info">
-          <h3>Cornrows & Braids</h3>
-          <p>Geometric patterns close to the scalp. From straight-back rows to intricate art — we do it all.</p>
-          <span class="style-badge">Artistic</span>
-        </div>
-      </div>
-      <div class="style-card">
-        <div class="style-img">🌟</div>
-        <div class="style-info">
-          <h3>Shape-Up & Lineup</h3>
-          <p>Precision edge work that defines your hairline. The finishing touch that separates a good cut from a great one.</p>
-          <span class="style-badge">Essential</span>
-        </div>
-      </div>
-      <div class="style-card">
-        <div class="style-img">👑</div>
-        <div class="style-info">
-          <h3>Mohawk Fade</h3>
-          <p>Bold center strip with tapered sides. Modern, fierce, and built for those who want to be seen.</p>
-          <span class="style-badge">Bold</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+      </nav>
+    </header>
 
-<!-- ── LOCATION STRIP ────────────────────────────────────── -->
-<div class="location-strip">
-  <div class="container location-inner">
-    <a class="loc-item" href="https://www.google.com/maps/place//data=!4m2!3m1!1s0x40b1f9098eae2edd:0x920baaf4b7456bb0" target="_blank" rel="noopener" style="text-decoration:none; cursor:pointer;">
-      <div class="loc-icon">📍</div>
-      <div>
-        <div class="loc-label">Location — Click for Directions</div>
-        <div class="loc-val" style="color:var(--gold); text-decoration:underline; text-underline-offset:3px;">Iancului 21, Bl. 106A, Sc. B, Ap. 46, Sector 2, București</div>
-      </div>
-    </a>
-    <div class="loc-item">
-      <div class="loc-icon">🕐</div>
-      <div>
-        <div class="loc-label">Hours</div>
-        <div class="loc-val">Mon – Fri &nbsp;·&nbsp; 19:00 – 22:00</div>
-        <div class="loc-val" style="margin-top:3px;">Sat – Sun &nbsp;·&nbsp; Any hour</div>
-      </div>
-    </div>
-    <div class="loc-item">
-      <div class="loc-icon">📞</div>
-      <div>
-        <div class="loc-label">WhatsApp</div>
-        <div class="loc-val">+40 700 000 000</div>
-      </div>
-    </div>
-    <a href="#booking" class="btn btn-gold" style="flex-shrink:0">Book Now</a>
-  </div>
-</div>
-
-<!-- ── BOOKING SECTION ───────────────────────────────────── -->
-<section class="booking-section" id="booking">
-  <div class="container">
-    <div class="booking-grid">
-
-      <!-- LEFT -->
-      <div class="booking-left">
-        <div class="tag">Reservations</div>
-        <h2>BOOK YOUR<br><em class="gold">THRONE</em><br>SESSION</h2>
-        <p>Pick your time, choose your style. If your slot is taken, we'll suggest the next available opening so you never leave without a booking.</p>
-        <div class="loyalty-box">
-          <h4>👑 KingPoints Loyalty</h4>
-          <p>No account needed — just your unique <strong>Barber ID</strong>. Every verified visit earns you points. Collect enough and your next cut is on us.</p>
-          <ul class="loyalty-steps">
-            <li><span class="step-num">1</span> Book & get your Barber ID instantly</li>
-            <li><span class="step-num">2</span> Visit the shop — barber marks you verified</li>
-            <li><span class="step-num">3</span> Earn 20 points per verified cut</li>
-            <li><span class="step-num">4</span> At 80 points = FREE cut 🎉</li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- FORM -->
-      <div class="booking-form" id="bookingForm">
-        <h3>✂ Reserve Your Slot</h3>
-
-        <!-- Auto-assigned ID -->
-        <div class="id-display">
-          <span>Your Barber ID</span>
-          <span class="id-value" id="barberIdDisplay">—</span>
-        </div>
-        <p class="id-note">💡 Save this ID — use it to check your KingPoints anytime.</p>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Full Name</label>
-            <input type="text" id="fname" placeholder="e.g. Kofi Mensah" />
+    <!-- ── HERO ────────────────────────────────────────────── -->
+    <section class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-pattern"></div>
+      <div class="container">
+        <div class="hero-content">
+          <div class="tag">📍 Piața Iancului · București · Romania</div>
+          <h1>YOUR CUT,<br /><em>YOUR</em><br />CROWN.</h1>
+          <p>
+            Where Afro culture meets precision craftsmanship. Every fade, every
+            taper, every loc - done with intention and finished like royalty.
+          </p>
+          <div class="hero-btns">
+            <a href="#booking" class="btn btn-gold">✂ Book Your Cut</a>
+            <a href="#styles" class="btn btn-outline">Explore Styles</a>
           </div>
-          <div class="form-group">
-            <label>Phone / WhatsApp</label>
-            <input type="tel" id="fphone" placeholder="+234 800 000 0000" inputmode="numeric" pattern="[0-9+\s\-]{7,15}" maxlength="15" />
+        </div>
+      </div>
+      <div class="hero-scroll">SCROLL</div>
+    </section>
+
+    <!-- ── HAIRSTYLES ───────────────────────────────────────── -->
+    <section class="styles-section" id="styles">
+      <div class="container">
+        <div class="section-head">
+          <div class="tag">Our Craft</div>
+          <h2>AFRO STYLES<br />WE <em class="gold">MASTER</em></h2>
+          <p>
+            From sharp fades to intricate locs, each cut is a statement. Choose
+            your signature look.
+          </p>
+        </div>
+        <div class="styles-grid">
+          <div class="style-card">
+            <div class="style-img">✊</div>
+            <div class="style-info">
+              <h3>Low Fade</h3>
+              <p>
+                Clean taper from skin to full length. The everyday king cut,
+                sharp enough for the boardroom, fresh for the weekend.
+              </p>
+              <span class="style-badge">Most Popular</span>
+            </div>
+          </div>
+          <div class="style-card">
+            <div class="style-img">🌀</div>
+            <div class="style-info">
+              <h3>Dreadlocks & Locs</h3>
+              <p>
+                Traditional or starter locs, retwisted with care. A spiritual
+                and cultural statement shaped with precision.
+              </p>
+              <span class="style-badge">Heritage Cut</span>
+            </div>
+          </div>
+          <div class="style-card">
+            <div class="style-img">⚡</div>
+            <div class="style-info">
+              <h3>High Top Afro</h3>
+              <p>
+                The iconic silhouette. Volume upward, edges sharp. Bold,
+                unapologetic, and undeniably African.
+              </p>
+              <span class="style-badge">Statement</span>
+            </div>
+          </div>
+          <div class="style-card">
+            <div class="style-img">🔷</div>
+            <div class="style-info">
+              <h3>Cornrows & Braids</h3>
+              <p>
+                Geometric patterns close to the scalp. From straight-back rows
+                to intricate art, we do it all.
+              </p>
+              <span class="style-badge">Artistic</span>
+            </div>
+          </div>
+          <div class="style-card">
+            <div class="style-img">🌟</div>
+            <div class="style-info">
+              <h3>Shape-Up & Lineup</h3>
+              <p>
+                Precision edge work that defines your hairline. The finishing
+                touch that separates a good cut from a great one.
+              </p>
+              <span class="style-badge">Essential</span>
+            </div>
+          </div>
+          <div class="style-card">
+            <div class="style-img">👑</div>
+            <div class="style-info">
+              <h3>Mohawk Fade</h3>
+              <p>
+                Bold center strip with tapered sides. Modern, fierce, and built
+                for those who want to be seen.
+              </p>
+              <span class="style-badge">Bold</span>
+            </div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ── LOCATION STRIP ────────────────────────────────────── -->
+    <div class="location-strip">
+      <div class="container location-inner">
+        <a
+          class="loc-item"
+          href="https://www.google.com/maps/place//data=!4m2!3m1!1s0x40b1f9098eae2edd:0x920baaf4b7456bb0"
+          target="_blank"
+          rel="noopener"
+          style="text-decoration: none; cursor: pointer"
+        >
+          <div class="loc-icon">📍</div>
+          <div>
+            <div class="loc-label">Location - Click for Directions</div>
+            <div
+              class="loc-val"
+              style="
+                color: var(--gold);
+                text-decoration: underline;
+                text-underline-offset: 3px;
+              "
+            >
+              Iancului 21, Bl. 106A, Sc. B, Ap. 46, Sector 2, București
+            </div>
+          </div>
+        </a>
+        <div class="loc-item">
+          <div class="loc-icon">🕐</div>
+          <div>
+            <div class="loc-label">Hours</div>
+            <div class="loc-val">Mon – Fri &nbsp;·&nbsp; 19:00 – 22:00</div>
+            <div class="loc-val" style="margin-top: 3px">
+              Sat – Sun &nbsp;·&nbsp; Any hour
+            </div>
+          </div>
+        </div>
+        <div class="loc-item">
+          <div class="loc-icon">📞</div>
+          <div>
+            <div class="loc-label">WhatsApp</div>
+            <div class="loc-val">+40 759 092 013</div>
+          </div>
+        </div>
+        <a href="#booking" class="btn btn-gold" style="flex-shrink: 0"
+          >Book Now</a
+        >
+      </div>
+    </div>
+
+    <!-- ── BOOKING SECTION ───────────────────────────────────── -->
+    <section class="booking-section" id="booking">
+      <div class="container">
+        <div class="booking-grid">
+          <!-- LEFT -->
+          <div class="booking-left">
+            <div class="tag">Reservations</div>
+            <h2>BOOK YOUR<br /><em class="gold">THRONE</em><br />SESSION</h2>
+            <p>
+              Pick your time, choose your style. If your slot is taken, we'll
+              suggest the next available opening so you never leave without a
+              booking.
+            </p>
+            <div class="loyalty-box">
+              <h4>👑 KingPoints Loyalty</h4>
+              <p>
+                No account needed — just your unique <strong>Barber ID</strong>.
+                Every verified visit earns you points. Collect enough and your
+                next cut is on us.
+              </p>
+              <ul class="loyalty-steps">
+                <li>
+                  <span class="step-num">1</span> Book & get your Barber ID
+                  instantly
+                </li>
+                <li>
+                  <span class="step-num">2</span> Visit the shop — barber marks
+                  you verified
+                </li>
+                <li>
+                  <span class="step-num">3</span> Earn 20 points per verified
+                  cut
+                </li>
+                <li>
+                  <span class="step-num">4</span> At 80 points = FREE cut 🎉
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- FORM -->
+          <div class="booking-form" id="bookingForm">
+            <h3>✂ Reserve Your Slot</h3>
+
+            <!-- Returning or new client toggle -->
+            <div class="client-toggle">
+              <button
+                class="toggle-btn active"
+                id="btnNew"
+                onclick="setClientMode('new')"
+              >
+                First Visit
+              </button>
+              <button
+                class="toggle-btn"
+                id="btnReturn"
+                onclick="setClientMode('returning')"
+              >
+                I Have a Barber ID
+              </button>
+            </div>
+
+            <!-- NEW CLIENT: auto-assigned ID -->
+            <div id="newClientBlock">
+              <div class="id-display">
+                <span>Your New Barber ID</span>
+                <span class="id-value" id="barberIdDisplay">—</span>
+              </div>
+              <p class="id-note">
+                💡 Screenshot this ID, you'll need it every time you book to
+                earn KingPoints.
+              </p>
+            </div>
+
+            <!-- RETURNING CLIENT: enter existing ID -->
+            <div id="returnClientBlock" style="display: none">
+              <div class="form-group">
+                <label>Enter Your Barber ID</label>
+                <input
+                  type="text"
+                  id="existingId"
+                  placeholder="e.g. CUT-A3F9"
+                  maxlength="8"
+                  style="
+                    text-transform: uppercase;
+                    letter-spacing: 3px;
+                    font-family: &quot;Space Mono&quot;, monospace;
+                    font-size: 16px;
+                  "
+                  oninput="this.value = this.value.toUpperCase()"
+                />
+              </div>
+              <p class="id-note" id="returnIdNote">
+                💡 Enter the ID from your first visit to keep your KingPoints.
+              </p>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="fname" placeholder="e.g. Kofi Mensah" />
+              </div>
+              <div class="form-group">
+                <label>Phone / WhatsApp</label>
+                <input
+                  type="tel"
+                  id="fphone"
+                  placeholder="+40759092013"
+                  inputmode="numeric"
+                  pattern="[0-9+\s\-]{7,15}"
+                  maxlength="15"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Preferred Style</label>
+              <select id="fstyle">
+                <option value="">- Select a style -</option>
+                <option>Low Fade</option>
+                <option>High Top Afro</option>
+                <option>Dreadlocks / Locs</option>
+                <option>Cornrows & Braids</option>
+                <option>Shape-Up & Lineup</option>
+                <option>Mohawk Fade</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="fdate" />
+              </div>
+              <div class="form-group">
+                <label>Preferred Time</label>
+                <select id="ftime">
+                  <option value="">- Pick a date first -</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Slot conflict suggestion (shown dynamically) -->
+            <div class="slot-suggestion" id="slotSuggestion">
+              ⚠ That time slot is taken! <strong id="suggestedTime"></strong> is
+              available - we've switched your booking to that slot.
+            </div>
+
+            <div class="form-group">
+              <label>Notes (optional)</label>
+              <textarea
+                id="fnotes"
+                placeholder="Any requests, I am coming with someone, or special notes…"
+              ></textarea>
+            </div>
+
+            <button class="btn btn-gold btn-submit" onclick="submitBooking()">
+              Confirm Booking →
+            </button>
+
+            <!-- Success state -->
+            <div class="form-success" id="formSuccess">
+              <div class="tick">👑</div>
+              <h4>You're On The List!</h4>
+              <p>Your Barber ID is:</p>
+              <span class="booked-id" id="successId"></span>
+              <p>
+                Screenshot this ID to track your KingPoints. Show up, get
+                verified, earn rewards. See you at the chair! ✂
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── POINTS MODAL ──────────────────────────────────────── -->
+    <div class="modal-overlay" id="pointsModal">
+      <div class="modal">
+        <button class="modal-close" onclick="closePointsModal()">✕</button>
+        <h3>Check KingPoints</h3>
+        <p class="sub">Enter your Barber ID to see your loyalty status.</p>
 
         <div class="form-group">
-          <label>Preferred Style</label>
-          <select id="fstyle">
-            <option value="">— Select a style —</option>
-            <option>Low Fade</option>
-            <option>High Top Afro</option>
-            <option>Dreadlocks / Locs</option>
-            <option>Cornrows & Braids</option>
-            <option>Shape-Up & Lineup</option>
-            <option>Mohawk Fade</option>
-            <option>Other</option>
-          </select>
+          <label>Barber ID</label>
+          <input
+            type="text"
+            id="checkId"
+            placeholder="e.g. CUT-A3F9"
+            style="text-transform: uppercase; letter-spacing: 2px"
+          />
         </div>
+        <button
+          class="btn btn-gold"
+          style="width: 100%; justify-content: center"
+          onclick="checkPoints()"
+        >
+          Check My Points →
+        </button>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Date</label>
-            <input type="date" id="fdate" />
+        <div class="points-result" id="pointsResult">
+          <div class="free-cut-badge" id="freeCutBadge">
+            🎉 FREE CUT UNLOCKED, Show this to your barber!
           </div>
-          <div class="form-group">
-            <label>Preferred Time</label>
-            <select id="ftime">
-              <option value="">— Pick a date first —</option>
-            </select>
+          <div class="points-big">
+            <span>Points: </span><span id="ptsValue">0</span>
           </div>
-        </div>
-
-        <!-- Slot conflict suggestion (shown dynamically) -->
-        <div class="slot-suggestion" id="slotSuggestion">
-          ⚠ That time slot is taken! <strong id="suggestedTime"></strong> is available — we've switched your booking to that slot.
-        </div>
-
-        <div class="form-group">
-          <label>Notes (optional)</label>
-          <textarea id="fnotes" placeholder="Any requests, reference photos, or special notes…"></textarea>
-        </div>
-
-        <button class="btn btn-gold btn-submit" onclick="submitBooking()">Confirm Booking →</button>
-
-        <!-- Success state -->
-        <div class="form-success" id="formSuccess">
-          <div class="tick">👑</div>
-          <h4>You're On The List!</h4>
-          <p>Your Barber ID is:</p>
-          <span class="booked-id" id="successId"></span>
-          <p>Screenshot this ID to track your KingPoints. Show up, get verified, earn rewards. See you at the chair! ✂</p>
+          <p class="points-msg" id="ptsMsg"></p>
+          <div class="points-bar-wrap">
+            <div class="points-bar" id="ptsBar" style="width: 0%"></div>
+          </div>
+          <div class="points-labels">
+            <span>0</span><span>80 = Free Cut</span>
+          </div>
         </div>
       </div>
-
     </div>
-  </div>
-</section>
 
-<!-- ── POINTS MODAL ──────────────────────────────────────── -->
-<div class="modal-overlay" id="pointsModal">
-  <div class="modal">
-    <button class="modal-close" onclick="closePointsModal()">✕</button>
-    <h3>Check KingPoints</h3>
-    <p class="sub">Enter your Barber ID to see your loyalty status.</p>
-
-    <div class="form-group">
-      <label>Barber ID</label>
-      <input type="text" id="checkId" placeholder="e.g. CUT-A3F9" style="text-transform:uppercase;letter-spacing:2px;" />
-    </div>
-    <button class="btn btn-gold" style="width:100%;justify-content:center;" onclick="checkPoints()">Check My Points →</button>
-
-    <div class="points-result" id="pointsResult">
-      <div class="free-cut-badge" id="freeCutBadge">🎉 FREE CUT UNLOCKED — Show this to your barber!</div>
-      <div class="points-big"><span>Points: </span><span id="ptsValue">0</span></div>
-      <p class="points-msg" id="ptsMsg"></p>
-      <div class="points-bar-wrap">
-        <div class="points-bar" id="ptsBar" style="width:0%"></div>
-      </div>
-      <div class="points-labels"><span>0</span><span>80 = Free Cut</span></div>
-    </div>
-  </div>
-</div>
-
-<!-- ── WHATSAPP BUTTON ───────────────────────────────────── -->
-<a class="wa-float" href="https://wa.me/40700000000?text=Buna!%20Vreau%20sa%20rezerv%20o%20tuns%20la%20KutKing." target="_blank" rel="noopener">
-  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-  Chat on WhatsApp
-</a>
-
-<!-- ── FOOTER ────────────────────────────────────────────── -->
-<footer>
-  <div class="container footer-inner">
-    <div class="logo" style="font-size:24px;">
-      <div class="logo-icon" style="width:32px;height:32px;font-size:16px;">✂</div>
-      <div>KUT<span>KING</span></div>
-    </div>
-    <div class="footer-links">
-      <a href="#booking">Book a Cut</a>
-      <div class="divider"></div>
-      <a href="#" onclick="openPointsModal(); return false;">Check Points</a>
-    </div>
-    <a class="footer-loc" href="https://www.google.com/maps/place//data=!4m2!3m1!1s0x40b1f9098eae2edd:0x920baaf4b7456bb0" target="_blank" rel="noopener" style="color:rgba(245,239,227,.4); transition:color .2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='rgba(245,239,227,.4)'">
-      <span>📍</span>
-      <span style="text-decoration:underline; text-underline-offset:3px;">Iancului 21, Bl. 106A, Sc. B, Sector 2, București</span>
+    <!-- ── WHATSAPP BUTTON ───────────────────────────────────── -->
+    <a
+      class="wa-float"
+      href="https://wa.me/40759092013?text=Buna!%20Vreau%20sa%20rezerv%20o%20tuns%20la%20KutKing."
+      target="_blank"
+      rel="noopener"
+    >
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"
+        />
+      </svg>
+      Chat on WhatsApp
     </a>
-    <div class="footer-copy">© 2025 KutKing Barbershop · București, Romania. All rights reserved. &nbsp;·&nbsp; Built with ✂ & 👑</div>
-  </div>
-</footer>
 
-<!-- ── SCRIPTS ───────────────────────────────────────────── -->
-<script>
-  /* ════════════════════════════════════════════════════════
-     CONFIGURATION — replace all 5 values below
-     ────────────────────────────────────────────────────────
-     SUPABASE (free at supabase.com):
-       1. Create project → Settings → API
-       2. Copy "Project URL" and "anon public" key
-       3. In Table Editor create two tables:
-          ┌─ bookings ──────────────────────────────────┐
-          │ id          uuid  PK default gen_random_uuid()│
-          │ barber_id   text  not null                   │
-          │ name        text                             │
-          │ phone       text                             │
-          │ style       text                             │
-          │ date        text                             │
-          │ time        text                             │
-          │ notes       text                             │
-          │ verified    bool  default false              │
-          │ created_at  timestamptz default now()        │
-          └─────────────────────────────────────────────┘
-          ┌─ points ────────────────────────────────────┐
-          │ barber_id   text  PK                        │
-          │ points      int   default 0                 │
-          │ updated_at  timestamptz default now()       │
-          └─────────────────────────────────────────────┘
-       4. For both tables: Authentication → Policies
-          → Enable RLS → Add policy "Allow all" for anon
-             (or use the quick "Enable all for anon" template)
+    <!-- ── FOOTER ────────────────────────────────────────────── -->
+    <footer>
+      <div class="container footer-inner">
+        <div class="logo" style="font-size: 24px">
+          <div
+            class="logo-icon"
+            style="width: 32px; height: 32px; font-size: 16px"
+          >
+            ✂
+          </div>
+          <div>AFRO<span>KUTS</span></div>
+        </div>
+        <div class="footer-links">
+          <a href="#booking">Book a Cut</a>
+          <div class="divider"></div>
+          <a
+            href="#"
+            onclick="
+              openPointsModal();
+              return false;
+            "
+            >Check Points</a
+          >
+        </div>
+        <a
+          class="footer-loc"
+          href="https://www.google.com/maps/place//data=!4m2!3m1!1s0x40b1f9098eae2edd:0x920baaf4b7456bb0"
+          target="_blank"
+          rel="noopener"
+          style="color: rgba(245, 239, 227, 0.4); transition: color 0.2s"
+          onmouseover="this.style.color = 'var(--gold)'"
+          onmouseout="this.style.color = 'rgba(245,239,227,.4)'"
+        >
+          <span>📍</span>
+          <span style="text-decoration: underline; text-underline-offset: 3px"
+            >Iancului 21, Bl. 106A, Sc. B, Sector 2, București</span
+          >
+        </a>
+        <div class="footer-copy">
+          © 2025 Afrokuts Barbershop · București, Romania. All rights reserved.
+          &nbsp;·&nbsp; Built with ✂ & 👑
+        </div>
+      </div>
+    </footer>
 
-     EMAILJS (emailjs.com):
-       5. Fill in your 3 keys below
-  ════════════════════════════════════════════════════════ */
-  const SUPABASE_URL      = 'https://nbepmbdjmkvbyrlkmseg.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5iZXBtYmRqbWt2YnlybGttc2VnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNTgwNDksImV4cCI6MjA5MzkzNDA0OX0.aIk3yedRY2wUTNYTwcDhnKRVlDLvx-vn7qU8gs89g_U';
-  const EMAILJS_PUBLIC_KEY  = 'M2ezCZib4X9WEuPIv';   // ← replace
-  const EMAILJS_SERVICE_ID  = 'service_714gejb';   // ← replace
-  const EMAILJS_TEMPLATE_ID = 'template_y35jq2m';  // ← replace
-
-  const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
-
-  /* ── Time slots by day type ── */
-  const WEEKDAY_TIMES = ['19:00','19:30','20:00','20:30','21:00','21:30','22:00'];
-  const WEEKEND_TIMES = [
-    '09:00','09:30','10:00','10:30','11:00','11:30',
-    '12:00','12:30','13:00','13:30','14:00','14:30',
-    '15:00','15:30','16:00','16:30','17:00','17:30',
-    '18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00'
-  ];
-
-  function getTimesForDate(dateStr) {
-    if (!dateStr) return [];
-    const day = new Date(dateStr).getDay();
-    return (day === 0 || day === 6) ? WEEKEND_TIMES : WEEKDAY_TIMES;
-  }
-
-  function populateTimes(dateStr) {
-    const sel = document.getElementById('ftime');
-    const times = getTimesForDate(dateStr);
-    if (!times.length) { sel.innerHTML = '<option value="">— Pick a date first —</option>'; return; }
-    const isWeekend = [0,6].includes(new Date(dateStr).getDay());
-    sel.innerHTML = `<option value="">— ${isWeekend ? 'Any hour (pick one)' : 'Evening slot (19:00–22:00)'} —</option>`;
-    times.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o); });
-  }
-
-  document.getElementById('fdate').addEventListener('change', function () { populateTimes(this.value); });
-
-  /* ── Barber ID ── */
-  function genId() {
-    const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let id = 'CUT-';
-    for (let i = 0; i < 4; i++) id += c[Math.floor(Math.random() * c.length)];
-    return id;
-  }
-  function getOrCreateId() {
-    let id = localStorage.getItem('kutking_id');
-    if (!id) { id = genId(); localStorage.setItem('kutking_id', id); }
-    return id;
-  }
-  const barberId = getOrCreateId();
-  document.getElementById('barberIdDisplay').textContent = barberId;
-  document.getElementById('fdate').min = new Date().toISOString().split('T')[0];
-
-  /* ── Phone validation ── */
-  document.getElementById('fphone').addEventListener('input', function () {
-    this.value = this.value.replace(/[^\d+\s\-]/g, '');
-  });
-  document.getElementById('fphone').addEventListener('keypress', function (e) {
-    if (!/[\d+\s\-]/.test(e.key) && e.key.length === 1) e.preventDefault();
-  });
-
-  /* ── Slot conflict (checks Supabase for real conflicts) ── */
-  async function getNextAvailable(date, time) {
-    const { data } = await db.from('bookings').select('time').eq('date', date);
-    const booked = (data || []).map(r => r.time);
-    if (!booked.includes(time)) return null;
-    const times = getTimesForDate(date);
-    const idx = times.indexOf(time);
-    for (let i = idx + 1; i < times.length; i++) {
-      if (!booked.includes(times[i])) return times[i];
-    }
-    return 'Next available day';
-  }
-
-  /* ── Submit booking ── */
-  async function submitBooking() {
-    const name  = document.getElementById('fname').value.trim();
-    const phone = document.getElementById('fphone').value.trim();
-    const style = document.getElementById('fstyle').value;
-    const date  = document.getElementById('fdate').value;
-    const time  = document.getElementById('ftime').value;
-    const notes = document.getElementById('fnotes').value.trim();
-
-    if (!name || !phone || !style || !date || !time) {
-      alert('Please fill in all required fields.'); return;
-    }
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length < 7 || digits.length > 15) {
-      alert('Please enter a valid phone number (7–15 digits).'); return;
-    }
-
-    const submitBtn = document.querySelector('.btn-submit');
-    submitBtn.textContent = 'Checking slot…';
-    submitBtn.disabled = true;
-
-    const suggested = await getNextAvailable(date, time);
-    const finalTime = (suggested && suggested !== 'Next available day') ? suggested : time;
-
-    if (suggested) {
-      document.getElementById('suggestedTime').textContent = suggested;
-      document.getElementById('slotSuggestion').style.display = 'block';
-    }
-
-    submitBtn.textContent = 'Confirming…';
-
-    /* Save booking to Supabase */
-    const { error: dbErr } = await db.from('bookings').insert({
-      barber_id: barberId, name, phone, style, date, time: finalTime,
-      notes: notes || '', verified: false
-    });
-    if (dbErr) console.warn('Supabase booking error:', dbErr);
-
-    /* Ensure points row exists for this ID */
-    const { data: existing } = await db.from('points').select('barber_id').eq('barber_id', barberId).maybeSingle();
-    if (!existing) {
-      await db.from('points').insert({ barber_id: barberId, points: 0 });
-    }
-
-    /* Send email to barber */
-    try {
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        barber_id: barberId, client_name: name, client_phone: phone,
-        style, date, time: finalTime, notes: notes || '—',
-      });
-    } catch (e) { console.warn('EmailJS error:', e); }
-
-    document.querySelectorAll('.booking-form > *:not(#formSuccess)').forEach(el => el.style.display = 'none');
-    document.getElementById('successId').textContent = barberId;
-    document.getElementById('formSuccess').style.display = 'block';
-  }
-
-  /* ── Check points (live from Supabase) ── */
-  async function checkPoints() {
-    const raw = document.getElementById('checkId').value.trim().toUpperCase();
-    if (!raw) { alert('Please enter your Barber ID.'); return; }
-
-    const checkBtn = document.querySelector('#pointsModal .btn-gold');
-    checkBtn.textContent = 'Checking…';
-    checkBtn.disabled = true;
-
-    const { data, error } = await db.from('points').select('points').eq('barber_id', raw).maybeSingle();
-    checkBtn.textContent = 'Check My Points →';
-    checkBtn.disabled = false;
-
-    if (error || !data) {
-      document.getElementById('ptsValue').textContent = '0';
-      document.getElementById('ptsBar').style.width = '0%';
-      document.getElementById('freeCutBadge').style.display = 'none';
-      document.getElementById('ptsMsg').textContent = 'No record found for this ID. Book your first cut to start earning KingPoints!';
-      document.getElementById('pointsResult').style.display = 'block';
-      return;
-    }
-
-    const pts = data.points || 0;
-    const pct = Math.min((pts / 80) * 100, 100);
-    document.getElementById('ptsValue').textContent = pts;
-    document.getElementById('ptsBar').style.width = pct + '%';
-
-    if (pts >= 80) {
-      document.getElementById('freeCutBadge').style.display = 'block';
-      document.getElementById('ptsMsg').textContent = "🎉 You've unlocked a FREE cut! Show this screen to your barber. Points reset after redemption.";
-    } else {
-      document.getElementById('freeCutBadge').style.display = 'none';
-      const needed = 80 - pts;
-      const cuts = Math.ceil(needed / 20);
-      document.getElementById('ptsMsg').textContent = `You need ${needed} more points — ${cuts} more verified cut${cuts !== 1 ? 's' : ''} — to earn your free session.`;
-    }
-    document.getElementById('pointsResult').style.display = 'block';
-  }
-
-  /* ── Modal controls ── */
-  function openPointsModal() {
-    document.getElementById('checkId').value = barberId;
-    document.getElementById('pointsResult').style.display = 'none';
-    document.getElementById('pointsModal').classList.add('open');
-  }
-  function closePointsModal() {
-    document.getElementById('pointsModal').classList.remove('open');
-  }
-  document.getElementById('pointsModal').addEventListener('click', function(e) {
-    if (e.target === this) closePointsModal();
-  });
-</script>
-
-</body>
+    <!-- ── SCRIPTS ───────────────────────────────────────────── -->
+    <script src="/app.js"></script>
+  </body>
 </html>
