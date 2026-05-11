@@ -12,6 +12,21 @@ async function api(action, payload = {}) {
 }
 
 /* ════════════════════════════════════
+   EMAILJS — client-side email to barber
+   Replace the 3 values below with yours
+════════════════════════════════════ */
+const EMAILJS_PUBLIC_KEY  = 'M2ezCZib4X9WEuPIv'; 
+const EMAILJS_SERVICE_ID  = 'service_714gejb';  
+const EMAILJS_TEMPLATE_ID = 'template_y35jq2m'; 
+
+(function initEmailJS() {
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
+  s.onload = () => emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+  document.head.appendChild(s);
+})();
+
+/* ════════════════════════════════════
    BARBER ID — new or returning client
 ════════════════════════════════════ */
 function genId() {
@@ -145,6 +160,22 @@ async function submitBooking() {
     submitBtn.textContent = 'Confirm Booking →';
     submitBtn.disabled = false;
     return;
+  }
+
+  // Send email notification to barber via EmailJS (client-side)
+  try {
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      barber_id:    activeId,
+      client_name:  name,
+      client_phone: phone,
+      style:        style,
+      date:         date,
+      time:         finalTime,
+      notes:        notes || '—',
+    });
+  } catch (e) {
+    console.warn('Email notification failed:', e);
+    // Booking is still saved — email failure is non-blocking
   }
 
   // Show success
