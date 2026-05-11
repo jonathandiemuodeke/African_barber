@@ -3,9 +3,6 @@ const { createClient } = require('@supabase/supabase-js');
 /* ── ALL SECRETS LIVE HERE — never visible to the browser ── */
 const SUPABASE_URL      = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-const EMAILJS_SERVICE   = process.env.EMAILJS_SERVICE_ID;
-const EMAILJS_TEMPLATE  = process.env.EMAILJS_TEMPLATE_ID;
-const EMAILJS_KEY       = process.env.EMAILJS_PUBLIC_KEY;
 const BARBER_PIN        = process.env.BARBER_PIN;
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -53,23 +50,6 @@ exports.handler = async (event) => {
     if (!existing) {
       await db.from('points').insert({ barber_id, points: 0 });
     }
-
-    // Send email via EmailJS REST API
-    try {
-      await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          service_id:  EMAILJS_SERVICE,
-          template_id: EMAILJS_TEMPLATE,
-          user_id:     EMAILJS_KEY,
-          template_params: {
-            barber_id, client_name: name, client_phone: phone,
-            style, date, time, notes: notes || '—',
-          },
-        }),
-      });
-    } catch (e) { /* email failure doesn't block booking */ }
 
     return ok({ success: true });
   }
